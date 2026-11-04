@@ -1,0 +1,65 @@
+# Sprint 1: tres nodos (uno por sede). El nodo central y los respaldos se agregan en el Sprint 3.
+# Versión de PostgreSQL: cambia PG_VERSION en .env por la versión estable vigente.
+x-pg-comun: &pg-comun
+  image: postgres:${PG_VERSION:-17}
+  restart: unless-stopped
+  environment: &env-comun
+    POSTGRES_USER: ${PG_USER:-hotel_admin}
+    POSTGRES_PASSWORD: ${PG_PASSWORD:-hotel_pass}
+    POSTGRES_DB: hotel
+  # wal_level=logical se necesita para la replicación lógica (Sprint 3)
+  command: ["postgres", "-c", "wal_level=logical", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10"]
+
+services:
+  cancun:
+    <<: *pg-comun
+    container_name: hotel_cancun
+    environment:
+      <<: *env-comun
+      SEDE_ID: "1"
+      SEDE_NOMBRE: "Cancún"
+      N_HAB: "300"
+      PRECIO_ESTANDAR: "1800"
+      PRECIO_SUITE: "4200"
+    ports: ["5433:5432"]
+    volumes:
+      - cancun_data:/var/lib/postgresql/data
+      - ./sql:/sql:ro
+      - ./docker/init-sede.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+
+  tulum:
+    <<: *pg-comun
+    container_name: hotel_tulum
+    environment:
+      <<: *env-comun
+      SEDE_ID: "2"
+      SEDE_NOMBRE: "Tulum"
+      N_HAB: "100"
+      PRECIO_ESTANDAR: "2400"
+      PRECIO_SUITE: "5500"
+    ports: ["5434:5432"]
+    volumes:
+      - tulum_data:/var/lib/postgresql/data
+      - ./sql:/sql:ro
+      - ./docker/init-sede.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+
+  bacalar:
+    <<: *pg-comun
+    container_name: hotel_bacalar
+    environment:
+      <<: *env-comun
+      SEDE_ID: "3"
+      SEDE_NOMBRE: "Bacalar"
+      N_HAB: "60"
+      PRECIO_ESTANDAR: "1500"
+      PRECIO_SUITE: "3500"
+    ports: ["5435:5432"]
+    volumes:
+      - bacalar_data:/var/lib/postgresql/data
+      - ./sql:/sql:ro
+      - ./docker/init-sede.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+
+volumes:
+  cancun_data:
+  tulum_data:
+  bacalar_data:
